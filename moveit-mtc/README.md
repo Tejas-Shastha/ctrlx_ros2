@@ -158,3 +158,24 @@ If you inspect the nodes now, among all the Rviz nodes, you will find a new node
 
 ### 5. Shutdown the processes
 Please, before closing the terminal that hold the SHH connections, terminate the processes with Ctrl^C. Otherwise, the system will be running for ever in the CtrlX OS and this could lead to problems in the future. If you forget to shutdown the terminals, most likely you will need to uninstall the ros2-moveit-mtc snap and install it again, note that you need to uninstall and install, and not simply reinstall/update.
+
+
+---
+
+# FROM HERE NOW INFO OF THIS FORK
+
+Made the following updates vs original code:
+1. Updated the `src/moveit_task_constructor` code with latest upstream [copy](https://github.com/moveit/moveit_task_constructor). This was missing the `pybind11` submodule. (If still same error, delete this folder and clone again).
+1. Update the [build script](./colcon-build.sh) to avoid mixins, and use only 1 core for an easier load on the VM.
+1. Added a gitignore to not accidentally push unwanted data.
+1. Building the snap in devmode by default, and added a bash app to it.
+
+## Important Learnings
+
+1. The [setup script](wrapper/setup-paths.sh) is very useful. This shows how we can loop in more ROS2 workspaces from other snaps, source it all properly and providea a cohesive workable ROS2 environment.
+1. From this example, once the snap is built, deployed and connected to the base humble properly, we can see 3 places inside it where ROS2 binaries are available:
+  1. `/snap/ros2-moveit-mtc/x1/rosruntime/opt/ros/humble` - This comes from the connection to the base-humble snap, declared in the [setup script](wrapper/setup-paths.sh#L3) as env var `$ROS_BASE`. Contains basic ros packages. This has to be sourced first.
+  1. `/snap/ros2-moveit-mtc/x1/opt/ros/humble` - These are the additional binary packages that are installed by this demo, via the [snapcfraft.yaml](snap/snapcraft.yaml#L17) under `staged-packages`. i.e. snapcraft installs these packages directly into the snap while building it. Contains the moveit packages mainly.
+  1. `/snap/ros2-moveit-mtc/x1` - Superset of previous path, contains as well the custom code built locally and then installed by this demo via the [snapcfraft.yaml](snap/snapcraft.yaml#L17) through the `dump` plugin i.e. we must build this code locally first, and then snapcraft just copies over the `install` folder (i.e. the binaries of this code) into the snap. Contains the MTC plugin and business logic.
+1. This multiple layer approach can be used for our demos as well.
+1. Whats missing currently is that I have still not been able to visualize all this in a second PC - though it should be possible.
