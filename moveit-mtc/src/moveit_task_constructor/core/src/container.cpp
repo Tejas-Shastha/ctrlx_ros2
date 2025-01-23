@@ -41,8 +41,7 @@
 #include <moveit/planning_scene/planning_scene.h>
 #include <moveit/trajectory_processing/time_optimal_trajectory_generation.h>
 
-#include <rclcpp/logger.hpp>
-#include <rclcpp/logging.hpp>
+#include <ros/console.h>
 
 #include <memory>
 #include <iostream>
@@ -63,24 +62,24 @@ printChildrenInterfaces(const ContainerBasePrivate& container, bool success, con
                         std::ostream& os = std::cerr) {
 	static unsigned int id = 0;
 	const unsigned int width = 10;  // indentation of name
-	os << std::endl << (success ? '+' : '-') << ' ' << creator.name() << ' ';
+	os << '\n' << (success ? '+' : '-') << ' ' << creator.name() << ' ';
 	if (success)
 		os << ++id << ' ';
 	if (const auto conn = dynamic_cast<const ConnectingPrivate*>(creator.pimpl()))
 		os << conn->pendingPairsPrinter();
-	os << std::endl;
+	os << '\n';
 
 	for (const auto& child : container.children()) {
 		auto cimpl = child->pimpl();
 		os << std::setw(width) << std::left << child->name();
 		if (!cimpl->starts() && !cimpl->ends())
-			os << "↕ " << std::endl;
+			os << "↕ \n";
 		if (cimpl->starts())
-			os << "↓ " << *child->pimpl()->starts() << std::endl;
+			os << "↓ " << *child->pimpl()->starts() << '\n';
 		if (cimpl->starts() && cimpl->ends())
 			os << std::setw(width) << "  ";
 		if (cimpl->ends())
-			os << "↑ " << *child->pimpl()->ends() << std::endl;
+			os << "↑ " << *child->pimpl()->ends() << '\n';
 	}
 }
 
@@ -236,7 +235,7 @@ void ContainerBasePrivate::onNewFailure(const Stage& child, const InterfaceState
 	if (!static_cast<ContainerBase*>(me_)->pruning())
 		return;
 
-	RCLCPP_DEBUG_STREAM(rclcpp::get_logger("Pruning"), fmt::format("'{}' generated a failure", child.name()));
+	ROS_DEBUG_STREAM_NAMED("Pruning", fmt::format("'{}' generated a failure", child.name()));
 	switch (child.pimpl()->interfaceFlags()) {
 		case GENERATE:
 			// just ignore: the pair of (new) states isn't known to us anyway
@@ -460,7 +459,7 @@ void ContainerBase::explainFailure(std::ostream& os) const {
 		if (stage->numFailures()) {
 			os << stage->name() << " (0/" << stage->numFailures() << ")";
 			stage->explainFailure(os);
-			os << std::endl;
+			os << '\n';
 			break;
 		}
 		stage->explainFailure(os);  // recursively process children
@@ -469,7 +468,7 @@ void ContainerBase::explainFailure(std::ostream& os) const {
 
 std::ostream& operator<<(std::ostream& os, const ContainerBase& container) {
 	ContainerBase::StageCallback processor = [&os](const Stage& stage, unsigned int depth) -> bool {
-		os << std::string(2 * depth, ' ') << *stage.pimpl() << std::endl;
+		os << std::string(2 * depth, ' ') << *stage.pimpl() << '\n';
 		return true;
 	};
 	container.traverseRecursively(processor);
@@ -510,8 +509,8 @@ struct SolutionCollector
 };
 
 void SerialContainer::onNewSolution(const SolutionBase& current) {
-	RCLCPP_DEBUG_STREAM(rclcpp::get_logger("SerialContainer"), fmt::format("'{}' received solution of child stage '{}'",
-	                                                                       this->name(), current.creator()->name()));
+	ROS_DEBUG_STREAM_NAMED("SerialContainer", fmt::format("'{}' received solution of child stage '{}'", this->name(),
+	                                                      current.creator()->name()));
 
 	// failures should never trigger this callback
 	assert(!current.isFailure());
@@ -949,8 +948,7 @@ void FallbacksPrivateCommon::compute() {
 
 inline void FallbacksPrivateCommon::nextChild() {
 	if (std::next(current_) != children().end())
-		RCLCPP_DEBUG_STREAM(rclcpp::get_logger("Fallbacks"),
-		                    fmt::format("Child '{}' failed, trying next one.", (*current_)->name()));
+		ROS_DEBUG_STREAM_NAMED("Fallbacks", fmt::format("Child '{}' failed, trying next one.", (*current_)->name()));
 	++current_;  // advance to next child
 }
 
@@ -1167,7 +1165,7 @@ void Merger::onNewSolution(const SolutionBase& s) {
 void MergerPrivate::onNewPropagateSolution(const SolutionBase& s) {
 	const SubTrajectory* trajectory = dynamic_cast<const SubTrajectory*>(&s);
 	if (!trajectory || !trajectory->trajectory()) {
-		RCLCPP_ERROR(rclcpp::get_logger("Merger"), "Only simple, valid trajectories are supported");
+		ROS_ERROR_NAMED("Merger", "Only simple, valid trajectories are supported");
 		return;
 	}
 

@@ -2,42 +2,13 @@
 # -*- coding: utf-8 -*-
 
 import sys
-import pytest
 import unittest
-import rclcpp
 from geometry_msgs.msg import Pose, PoseStamped, PointStamped, TwistStamped, Vector3Stamped
 from moveit_msgs.msg import RobotState, Constraints, MotionPlanRequest
 from moveit.task_constructor import core, stages
 
 
-def setUpModule():
-    rclcpp.init()
-
-
-def tearDownModule():
-    rclcpp.shutdown()
-
-
-# When py_binding_tools and MTC are compiled with different pybind11 versions,
-# the corresponding classes are not interoperable.
-def check_pybind11_incompatibility():
-    rclcpp.init()
-    node = rclcpp.Node("dummy")
-    try:
-        core.PipelinePlanner(node)
-    except TypeError:
-        return True
-    finally:
-        rclcpp.shutdown()
-    return False
-
-
-incompatible_pybind11 = check_pybind11_incompatibility()
-incompatible_pybind11_msg = "MoveIt and MTC use incompatible pybind11 versions"
-
-
 class TestPropertyMap(unittest.TestCase):
-
     def setUp(self):
         self.props = core.PropertyMap()
 
@@ -56,10 +27,8 @@ class TestPropertyMap(unittest.TestCase):
         # MotionPlanRequest is not registered as property type and should raise
         self.assertRaises(TypeError, self._check, "request", MotionPlanRequest())
 
-    @unittest.skipIf(incompatible_pybind11, incompatible_pybind11_msg)
     def test_assign_in_reference(self):
-        node = rclcpp.Node("test_mtc_props")
-        planner = core.PipelinePlanner(node)
+        planner = core.PipelinePlanner()
         props = planner.properties
 
         props["goal_joint_tolerance"] = 3.14
@@ -146,10 +115,8 @@ class TestModifyPlanningScene(unittest.TestCase):
 
 
 class TestStages(unittest.TestCase):
-    @unittest.skipIf(incompatible_pybind11, incompatible_pybind11_msg)
     def setUp(self):
-        self.node = rclcpp.Node("test_mtc_stages")
-        self.planner = core.PipelinePlanner(self.node)
+        self.planner = core.PipelinePlanner()
 
     def _check(self, stage, name, value):
         self._check_assign(stage, name, value)
@@ -231,7 +198,8 @@ class TestStages(unittest.TestCase):
         stage.setDirection({"joint": 0.1})
 
     def test_Connect(self):
-        stage = stages.Connect("connect", [("group1", self.planner), ("group2", self.planner)])
+        planner = core.PipelinePlanner()
+        stage = stages.Connect("connect", [("group1", planner), ("group2", planner)])
 
     def test_FixCollisionObjects(self):
         stage = stages.FixCollisionObjects("collision")

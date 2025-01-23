@@ -37,7 +37,9 @@
 #include "local_task_model.h"
 #include "factory_model.h"
 #include "properties/property_factory.h"
-#include <rviz_common/properties/property_tree_model.hpp>
+#include <rviz/properties/property_tree_model.h>
+
+#include <ros/console.h>
 
 #include <QMimeData>
 
@@ -76,7 +78,7 @@ QModelIndex LocalTaskModel::index(Node* n) const {
 }
 
 LocalTaskModel::LocalTaskModel(ContainerBase::pointer&& container, const planning_scene::PlanningSceneConstPtr& scene,
-                               rviz_common::DisplayContext* display_context, QObject* parent)
+                               rviz::DisplayContext* display_context, QObject* parent)
   : BaseTaskModel(scene, display_context, parent), Task("", true, std::move(container)) {
 	root_ = this;
 	flags_ |= LOCAL_MODEL;
@@ -233,7 +235,7 @@ DisplaySolutionPtr LocalTaskModel::getSolution(const QModelIndex& /*index*/) {
 	return DisplaySolutionPtr();
 }
 
-rviz_common::properties::PropertyTreeModel* LocalTaskModel::getPropertyModel(const QModelIndex& index) {
+rviz::PropertyTreeModel* LocalTaskModel::getPropertyModel(const QModelIndex& index) {
 	Node* n = node(index);
 	if (!n)
 		return nullptr;

@@ -36,10 +36,10 @@
 
 #pragma once
 
-#include <moveit_task_constructor_msgs/msg/trajectory_execution_info.hpp>
+#include <moveit_task_constructor_msgs/TrajectoryExecutionInfo.h>
 
 namespace moveit {
 namespace task_constructor {
-using TrajectoryExecutionInfo = moveit_task_constructor_msgs::msg::TrajectoryExecutionInfo;
+using TrajectoryExecutionInfo = moveit_task_constructor_msgs::TrajectoryExecutionInfo;
 }  // namespace task_constructor
 }  // namespace moveit

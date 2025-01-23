@@ -45,8 +45,7 @@
 #include <vector>
 #include <functional>
 #include <sstream>
-#include <rclcpp/serialization.hpp>
-#include <rosidl_runtime_cpp/traits.hpp>
+#include <ros/serialization.h>
 
 namespace moveit {
 namespace task_constructor {
@@ -211,12 +210,12 @@ public:
 	PropertySerializer() { insert(typeid(T), typeName<T>(), &serialize, &deserialize); }
 
 	template <class Q = T>
-	static typename std::enable_if<rosidl_generator_traits::is_message<Q>::value, std::string>::type typeName() {
-		return rosidl_generator_traits::data_type<T>();
+	static typename std::enable_if<ros::message_traits::IsMessage<Q>::value, std::string>::type typeName() {
+		return ros::message_traits::DataType<T>::value();
 	}
 
 	template <class Q = T>
-	static typename std::enable_if<!rosidl_generator_traits::is_message<Q>::value, std::string>::type typeName() {
+	static typename std::enable_if<!ros::message_traits::IsMessage<Q>::value, std::string>::type typeName() {
 		return typeid(T).name();
 	}
 

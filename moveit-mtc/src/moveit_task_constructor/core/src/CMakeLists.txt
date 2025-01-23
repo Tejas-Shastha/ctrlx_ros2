@@ -1,4 +1,4 @@
-add_library(${PROJECT_NAME} SHARED
+add_library(${PROJECT_NAME}
 	${PROJECT_INCLUDE}/container.h
 	${PROJECT_INCLUDE}/container_p.h
 	${PROJECT_INCLUDE}/cost_queue.h
@@ -37,26 +37,16 @@ add_library(${PROJECT_NAME} SHARED
 	solvers/pipeline_planner.cpp
 	solvers/multi_planner.cpp
 )
-ament_target_dependencies(${PROJECT_NAME}
-	fmt
-	moveit_core
-	geometry_msgs
-	moveit_ros_planning
-	moveit_ros_planning_interface
-	moveit_task_constructor_msgs
-	rclcpp
-	rviz_marker_tools
-	visualization_msgs
-)
+target_link_libraries(${PROJECT_NAME} ${catkin_LIBRARIES} fmt::fmt)
 target_include_directories(${PROJECT_NAME}
 	PUBLIC $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
-	       $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
-	       $<INSTALL_INTERFACE:include>
+	PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
 )
+target_include_directories(${PROJECT_NAME} SYSTEM PUBLIC ${catkin_INCLUDE_DIRS})
+add_dependencies(${PROJECT_NAME} ${catkin_EXPORTED_TARGETS})
 
 add_subdirectory(stages)
 
 install(TARGETS ${PROJECT_NAME}
-        EXPORT ${PROJECT_NAME}Targets
-        ARCHIVE DESTINATION lib
-        LIBRARY DESTINATION lib)
+	ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+	LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION})

@@ -7,7 +7,7 @@
 #include <moveit/task_constructor/stages/connect.h>
 #include <moveit/task_constructor/solvers/pipeline_planner.h>
 
-#include <rclcpp/rclcpp.hpp>
+#include <ros/ros.h>
 #include <moveit/planning_scene_interface/planning_scene_interface.h>
 #include <gtest/gtest.h>
 
@@ -16,7 +16,7 @@ using namespace moveit::task_constructor;
 void spawnObject() {
 	moveit::planning_interface::PlanningSceneInterface psi;
 
-	moveit_msgs::msg::CollisionObject o;
+	moveit_msgs::CollisionObject o;
 	o.id = "object";
 	o.header.frame_id = "table_top";
 	o.primitive_poses.resize(1);
@@ -25,7 +25,7 @@ void spawnObject() {
 	o.primitive_poses[0].position.z = 0.12;
 	o.primitive_poses[0].orientation.w = 1.0;
 	o.primitives.resize(1);
-	o.primitives[0].type = shape_msgs::msg::SolidPrimitive::CYLINDER;
+	o.primitives[0].type = shape_msgs::SolidPrimitive::CYLINDER;
 	o.primitives[0].dimensions.resize(2);
 	o.primitives[0].dimensions[0] = 0.23;
 	o.primitives[0].dimensions[1] = 0.03;
@@ -40,9 +40,8 @@ TEST(UR5, pick) {
 	initial_stage = initial.get();
 	t.add(std::move(initial));
 
-	auto node = rclcpp::Node::make_shared("ur5");
 	// planner used for connect
-	auto pipeline = std::make_shared<solvers::PipelinePlanner>(node);
+	auto pipeline = std::make_shared<solvers::PipelinePlanner>();
 	pipeline->setPlannerId("RRTConnectkConfigDefault");
 	// connect to pick
 	stages::Connect::GroupPlannerVector planners = { { "arm", pipeline }, { "gripper", pipeline } };
@@ -64,12 +63,12 @@ TEST(UR5, pick) {
 	auto pick = std::make_unique<stages::Pick>(std::move(grasp));
 	pick->setProperty("eef", std::string("gripper"));
 	pick->setProperty("object", std::string("object"));
-	geometry_msgs::msg::TwistStamped approach;
+	geometry_msgs::TwistStamped approach;
 	approach.header.frame_id = "s_model_tool0";
 	approach.twist.linear.x = 1.0;
 	pick->setApproachMotion(approach, 0.03, 0.1);
 
-	geometry_msgs::msg::TwistStamped lift;
+	geometry_msgs::TwistStamped lift;
 	lift.header.frame_id = "world";
 	lift.twist.linear.z = 1.0;
 	pick->setLiftMotion(lift, 0.03, 0.05);
@@ -80,7 +79,7 @@ TEST(UR5, pick) {
 		spawnObject();
 		t.plan();
 	} catch (const InitStageException& e) {
-		ADD_FAILURE() << "planning failed with exception" << std::endl << e << t;
+		ADD_FAILURE() << "planning failed with exception\n" << e << t;
 	}
 
 	auto solutions = t.solutions().size();
@@ -90,10 +89,12 @@ TEST(UR5, pick) {
 
 int main(int argc, char** argv) {
 	testing::InitGoogleTest(&argc, argv);
-	rclcpp::init(argc, argv);
+	ros::init(argc, argv, "ur5");
+	ros::AsyncSpinner spinner(1);
+	spinner.start();
 
 	// wait some time for move_group to come up
-	rclcpp::sleep_for(std::chrono::seconds(5));
+	ros::WallDuration(5.0).sleep();
 
 	return RUN_ALL_TESTS();
 }

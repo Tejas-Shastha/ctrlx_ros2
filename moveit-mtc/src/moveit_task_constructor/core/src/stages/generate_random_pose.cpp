@@ -41,15 +41,9 @@
 #include <rviz_marker_tools/marker_creation.h>
 
 #include <Eigen/Geometry>
-#if __has_include(<tf2_eigen/tf2_eigen.hpp>)
-#include <tf2_eigen/tf2_eigen.hpp>
-#else
 #include <tf2_eigen/tf2_eigen.h>
-#endif
 
 #include <chrono>
-
-static auto LOGGER = rclcpp::get_logger("GenerateRandomPose");
 
 namespace {
 // TODO(henningkayser): support user-defined random number engines
@@ -96,15 +90,15 @@ void GenerateRandomPose::compute() {
 
 	const SolutionBase& s = *upstream_solutions_.pop();
 	planning_scene::PlanningScenePtr scene = s.end()->scene()->diff();
-	auto seed_pose = properties().get<geometry_msgs::msg::PoseStamped>("pose");
+	auto seed_pose = properties().get<geometry_msgs::PoseStamped>("pose");
 	if (seed_pose.header.frame_id.empty())
 		seed_pose.header.frame_id = scene->getPlanningFrame();
 	else if (!scene->knowsFrameTransform(seed_pose.header.frame_id)) {
-		RCLCPP_WARN(LOGGER, "Unknown frame: '%s'", seed_pose.header.frame_id.c_str());
+		ROS_WARN_NAMED("GenerateRandomPose", "Unknown frame: '%s'", seed_pose.header.frame_id.c_str());
 		return;
 	}
 
-	const auto& spawn_target_pose = [&](const geometry_msgs::msg::PoseStamped& target_pose) {
+	const auto& spawn_target_pose = [&](const geometry_msgs::PoseStamped& target_pose) {
 		InterfaceState state(scene);
 		forwardProperties(*s.end(), state);  // forward registered properties from received solution
 		state.properties().set("target_pose", target_pose);

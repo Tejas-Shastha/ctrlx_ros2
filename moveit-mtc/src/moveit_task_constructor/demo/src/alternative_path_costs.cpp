@@ -1,4 +1,4 @@
-#include <rclcpp/rclcpp.hpp>
+#include <ros/ros.h>
 
 #include <moveit/planning_scene/planning_scene.h>
 
@@ -16,15 +16,11 @@ using namespace moveit::task_constructor;
 
 /* FixedState - Connect - FixedState */
 int main(int argc, char** argv) {
-	rclcpp::init(argc, argv);
-	rclcpp::NodeOptions node_options;
-	node_options.automatically_declare_parameters_from_overrides(true);
-	auto node = rclcpp::Node::make_shared("mtc_tutorial", node_options);
-	std::thread spinning_thread([node] { rclcpp::spin(node); });
+	ros::init(argc, argv, "mtc_tutorial");
 
 	Task t;
 	t.stages()->setName("alternative path costs");
-	t.loadRobotModel(node);
+	t.loadRobotModel();
 
 	assert(t.getRobotModel()->getName() == "panda");
 
@@ -37,7 +33,7 @@ int main(int argc, char** argv) {
 	initial->setState(scene);
 	t.add(std::move(initial));
 
-	auto pipeline{ std::make_shared<solvers::PipelinePlanner>(node) };
+	auto pipeline{ std::make_shared<solvers::PipelinePlanner>() };
 
 	auto alternatives{ std::make_unique<Alternatives>("connect") };
 	{
@@ -77,11 +73,10 @@ int main(int argc, char** argv) {
 	try {
 		t.plan(0);
 	} catch (const InitStageException& e) {
-		std::cout << e << std::endl;
+		std::cout << e << '\n';
 	}
 
-	// keep alive for interactive inspection in rviz
-	spinning_thread.join();
+	ros::spin();
 
 	return 0;
 }

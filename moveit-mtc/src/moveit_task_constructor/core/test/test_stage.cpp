@@ -4,12 +4,10 @@
 #include <moveit/task_constructor/stages/compute_ik.h>
 #include <moveit/task_constructor/stages/modify_planning_scene.h>
 #include <moveit/planning_scene/planning_scene.h>
-#include <geometry_msgs/msg/pose_stamped.hpp>
+#include <geometry_msgs/PoseStamped.h>
 
 #include "stage_mockups.h"
-
-#include <rclcpp/logging.hpp>
-
+#include <ros/console.h>
 #include <gtest/gtest.h>
 
 using namespace moveit::task_constructor;
@@ -91,7 +89,7 @@ TEST(ModifyPlanningScene, allowCollisions) {
 
 void spawnObject(PlanningScene& scene, const std::string& name, int type,
                  const std::vector<double>& pos = { 0, 0, 0 }) {
-	moveit_msgs::msg::CollisionObject o;
+	moveit_msgs::CollisionObject o;
 	o.id = name;
 	o.header.frame_id = scene.getPlanningFrame();
 	o.primitive_poses.resize(1);
@@ -104,13 +102,13 @@ void spawnObject(PlanningScene& scene, const std::string& name, int type,
 	o.primitives[0].type = type;
 
 	switch (type) {
-		case shape_msgs::msg::SolidPrimitive::CYLINDER:
+		case shape_msgs::SolidPrimitive::CYLINDER:
 			o.primitives[0].dimensions = { 0.1, 0.02 };
 			break;
-		case shape_msgs::msg::SolidPrimitive::BOX:
+		case shape_msgs::SolidPrimitive::BOX:
 			o.primitives[0].dimensions = { 0.1, 0.2, 0.3 };
 			break;
-		case shape_msgs::msg::SolidPrimitive::SPHERE:
+		case shape_msgs::SolidPrimitive::SPHERE:
 			o.primitives[0].dimensions = { 0.05 };
 			break;
 	}
@@ -118,10 +116,10 @@ void spawnObject(PlanningScene& scene, const std::string& name, int type,
 }
 
 void attachObject(PlanningScene& scene, const std::string& object, const std::string& link, bool attach) {
-	moveit_msgs::msg::AttachedCollisionObject obj;
+	moveit_msgs::AttachedCollisionObject obj;
 	obj.link_name = link;
-	obj.object.operation = attach ? static_cast<int8_t>(moveit_msgs::msg::CollisionObject::ADD) :
-	                                static_cast<int8_t>(moveit_msgs::msg::CollisionObject::REMOVE);
+	obj.object.operation = attach ? static_cast<int8_t>(moveit_msgs::CollisionObject::ADD) :
+	                                static_cast<int8_t>(moveit_msgs::CollisionObject::REMOVE);
 	obj.object.id = object;
 	scene.processAttachedCollisionObjectMsg(obj);
 }
@@ -131,19 +129,19 @@ TEST(Connect, compatible) {
 	auto scene = std::make_shared<PlanningScene>(getModel());
 	auto& state = scene->getCurrentStateNonConst();
 	state.setToDefaultValues();
-	spawnObject(*scene, "object", shape_msgs::msg::SolidPrimitive::CYLINDER);
+	spawnObject(*scene, "object", shape_msgs::SolidPrimitive::CYLINDER);
 	state.update();
 
 	auto other = scene->diff();
 	EXPECT_TRUE(connect.compatible(scene, other)) << "identical scenes";
 
-	spawnObject(*other, "object", shape_msgs::msg::SolidPrimitive::BOX);
+	spawnObject(*other, "object", shape_msgs::SolidPrimitive::BOX);
 	// EXPECT_FALSE(connect.compatible(scene, other)) << "different shapes";
 
-	spawnObject(*other, "object", shape_msgs::msg::SolidPrimitive::CYLINDER, { 0.1, 0, 0 });
+	spawnObject(*other, "object", shape_msgs::SolidPrimitive::CYLINDER, { 0.1, 0, 0 });
 	EXPECT_FALSE(connect.compatible(scene, other)) << "different pose";
 
-	spawnObject(*other, "object", shape_msgs::msg::SolidPrimitive::CYLINDER);
+	spawnObject(*other, "object", shape_msgs::SolidPrimitive::CYLINDER);
 	EXPECT_TRUE(connect.compatible(scene, other)) << "same objects";
 
 	// attached objects
@@ -154,7 +152,7 @@ TEST(Connect, compatible) {
 	other = scene->diff();
 	EXPECT_TRUE(connect.compatible(scene, other)) << "identical scenes, attached object";
 
-	spawnObject(*other, "object", shape_msgs::msg::SolidPrimitive::CYLINDER, { 0.1, 0, 0 });
+	spawnObject(*other, "object", shape_msgs::SolidPrimitive::CYLINDER, { 0.1, 0, 0 });
 	attachObject(*other, "object", "tip", true);
 	EXPECT_FALSE(connect.compatible(scene, other)) << "different pose";
 }

@@ -5,10 +5,9 @@ from moveit.task_constructor import core, stages
 from geometry_msgs.msg import PoseStamped
 import time
 
-import rclcpp
+from py_binding_tools import roscpp_init
 
-rclcpp.init()
-node = rclcpp.Node("mtc_tutorial")
+roscpp_init("mtc_tutorial")
 
 # [propertyTut1]
 # Create a property

@@ -1,7 +1,8 @@
 #! /usr/bin/env python3
 
 import unittest
-import rclcpp
+import rostest
+from py_binding_tools import roscpp_init
 from moveit.task_constructor import core, stages
 from geometry_msgs.msg import PoseStamped
 from geometry_msgs.msg import Vector3Stamped, Vector3
@@ -9,14 +10,11 @@ from std_msgs.msg import Header
 
 
 def setUpModule():
-    rclcpp.init()
+    roscpp_init("test_mtc")
 
 
 class Test(unittest.TestCase):
     PLANNING_GROUP = "manipulator"
-
-    def setUp(self):
-        self.node = rclcpp.Node("test_mtc")
 
     def test_MoveAndExecute(self):
         moveRel = stages.MoveRelative("moveRel", core.JointInterpolationPlanner())
@@ -28,8 +26,6 @@ class Test(unittest.TestCase):
         moveTo.setGoal("all-zeros")
 
         task = core.Task()
-        task.loadRobotModel(self.node)
-
         task.add(stages.CurrentState("current"), moveRel, moveTo)
 
         self.assertTrue(task.plan())
@@ -49,8 +45,6 @@ class Test(unittest.TestCase):
             return move
 
         task = core.Task()
-        task.loadRobotModel(self.node)
-
         task.add(stages.CurrentState("current"))
         merger = core.Merger("merger")
         merger.insert(createDisplacement(self.PLANNING_GROUP, [-0.2, 0, 0]))
@@ -63,4 +57,4 @@ class Test(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    unittest.main()
+    rostest.rosrun("mtc", "base", Test)

@@ -6,7 +6,7 @@ qt_wrap_ui(UIC_FILES
 	global_settings.ui
 )
 
-add_library(${MOVEIT_LIB_NAME} SHARED
+add_library(${MOVEIT_LIB_NAME}
 	factory_model.cpp
 	icons.cpp
 	job_queue.cpp
@@ -28,18 +28,21 @@ add_library(${MOVEIT_LIB_NAME} SHARED
 set_target_properties(${MOVEIT_LIB_NAME} PROPERTIES VERSION "${${PROJECT_NAME}_VERSION}")
 target_link_libraries(${MOVEIT_LIB_NAME}
 	motion_planning_tasks_utils motion_planning_tasks_properties moveit_task_visualization_tools
-	${QT_LIBRARIES}
+	${catkin_LIBRARIES} ${QT_LIBRARIES}
 )
 target_include_directories(${MOVEIT_LIB_NAME}
 	PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/..>
 	PRIVATE $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>
+)
+target_include_directories(${MOVEIT_LIB_NAME} SYSTEM PUBLIC
 	# https://stackoverflow.com/questions/47175683/cmake-target-link-libraries-propagation-of-include-directories
-	PUBLIC $<TARGET_PROPERTY:motion_planning_tasks_utils,INTERFACE_INCLUDE_DIRECTORIES>
-	PUBLIC $<TARGET_PROPERTY:motion_planning_tasks_properties,INTERFACE_INCLUDE_DIRECTORIES>
-	PUBLIC $<TARGET_PROPERTY:moveit_task_visualization_tools,INTERFACE_INCLUDE_DIRECTORIES>
+	$<TARGET_PROPERTY:motion_planning_tasks_utils,INTERFACE_INCLUDE_DIRECTORIES>
+	$<TARGET_PROPERTY:motion_planning_tasks_properties,INTERFACE_INCLUDE_DIRECTORIES>
+	$<TARGET_PROPERTY:moveit_task_visualization_tools,INTERFACE_INCLUDE_DIRECTORIES>
+	${catkin_INCLUDE_DIRS}
+	${rviz_OGRE_INCLUDE_DIRS}
 )
 
 install(TARGETS ${MOVEIT_LIB_NAME}
-	EXPORT export_${MOVEIT_LIB_NAME}
-	ARCHIVE DESTINATION lib
-	LIBRARY DESTINATION lib)
+	ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+	LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION})

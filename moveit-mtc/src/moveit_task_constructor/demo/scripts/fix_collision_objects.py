@@ -2,16 +2,14 @@
 # -*- coding: utf-8 -*-
 
 from moveit.task_constructor import core, stages
-import rclcpp
+from py_binding_tools import roscpp_init
 import time
 
-rclcpp.init()
-node = rclcpp.Node("mtc_tutorial")
+roscpp_init("mtc_tutorial")
 
 # Create a task
 task = core.Task()
 task.name = "fix collision objects"
-task.loadRobotModel(node)
 
 # Add the current state to the task hierarchy
 task.add(stages.CurrentState("current state"))

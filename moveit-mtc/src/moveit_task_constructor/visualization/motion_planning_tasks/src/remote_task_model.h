@@ -38,8 +38,7 @@
 
 #include "task_list_model.h"
 #include <moveit/visualization_tools/display_solution.h>
-#include <moveit_task_constructor_msgs/srv/get_solution.hpp>
-#include <rclcpp/client.hpp>
+#include <ros/service_client.h>
 #include <memory>
 #include <limits>
 
@@ -55,11 +54,7 @@ class RemoteTaskModel : public BaseTaskModel
 	Q_OBJECT
 	struct Node;
 	Node* const root_;
-	rclcpp::Client<moveit_task_constructor_msgs::srv::GetSolution>::SharedPtr get_solution_client_;
-	// TODO(JafarAbdi): We shouldn't need this, replace with callback groups (should be fully available in Galactic)
-	// RViz have a single threaded executor which is causing the get_solution_client_ to timeout without
-	// getting the result
-	rclcpp::Node::SharedPtr node_;
+	ros::ServiceClient get_solution_client_;
 
 	std::map<uint32_t, Node*> id_to_stage_;
 	std::map<uint32_t, DisplaySolutionPtr> id_to_solution_;
@@ -69,11 +64,12 @@ class RemoteTaskModel : public BaseTaskModel
 
 	Node* node(uint32_t stage_id) const;
 	inline RemoteSolutionModel* getSolutionModel(uint32_t stage_id) const;
-	void setSolutionData(const moveit_task_constructor_msgs::msg::SolutionInfo& info);
+	void setSolutionData(const moveit_task_constructor_msgs::SolutionInfo& info);
 
 public:
-	RemoteTaskModel(const std::string& service_name, const planning_scene::PlanningSceneConstPtr& scene,
-	                rviz_common::DisplayContext* display_context, QObject* parent = nullptr);
+	RemoteTaskModel(ros::NodeHandle& nh, const std::string& service_name,
+	                const planning_scene::PlanningSceneConstPtr& scene, rviz::DisplayContext* display_context,
+	                QObject* parent = nullptr);
 	~RemoteTaskModel() override;
 
 	int rowCount(const QModelIndex& parent = QModelIndex()) const override;
@@ -85,14 +81,14 @@ public:
 	bool setData(const QModelIndex& index, const QVariant& value, int role = Qt::EditRole) override;
 
 	QModelIndex indexFromStageId(size_t id) const override;
-	void processStageDescriptions(const moveit_task_constructor_msgs::msg::TaskDescription::_stages_type& msg);
-	void processStageStatistics(const moveit_task_constructor_msgs::msg::TaskStatistics::_stages_type& msg);
-	DisplaySolutionPtr processSolutionMessage(const moveit_task_constructor_msgs::msg::Solution& msg);
+	void processStageDescriptions(const moveit_task_constructor_msgs::TaskDescription::_stages_type& msg);
+	void processStageStatistics(const moveit_task_constructor_msgs::TaskStatistics::_stages_type& msg);
+	DisplaySolutionPtr processSolutionMessage(const moveit_task_constructor_msgs::Solution& msg);
 
 	QAbstractItemModel* getSolutionModel(const QModelIndex& index) override;
 	DisplaySolutionPtr getSolution(const QModelIndex& index) override;
 
-	rviz_common::properties::PropertyTreeModel* getPropertyModel(const QModelIndex& index) override;
+	rviz::PropertyTreeModel* getPropertyModel(const QModelIndex& index) override;
 };
 
 /** Model representing solutions of a remote task */

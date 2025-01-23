@@ -38,21 +38,18 @@
 
 #pragma once
 
-#include <rviz_common/panel.hpp>
+#include <rviz/panel.h>
 #include <moveit/macros/class_forward.h>
 #include <QModelIndex>
 class QItemSelection;
 class QIcon;
 
-namespace rviz_common {
+namespace rviz {
 class WindowManagerInterface;
-class VisualizationManager;
-namespace properties {
 class Property;
 class BoolProperty;
 class EnumProperty;
-}  // namespace properties
-}  // namespace rviz_common
+}  // namespace rviz
 
 namespace moveit_rviz_plugin {
 
@@ -67,15 +64,16 @@ class SubPanel : public QWidget
 public:
 	SubPanel(QWidget* parent = nullptr) : QWidget(parent) {}
 
-	virtual void save(rviz_common::Config /*config*/) {}  // NOLINT(performance-unnecessary-value-param)
-	virtual void load(const rviz_common::Config& /*config*/) {}
+	virtual void save(rviz::Config /*config*/) {}  // NOLINT(performance-unnecessary-value-param)
+	virtual void load(const rviz::Config& /*config*/) {}
+
 Q_SIGNALS:
 	void configChanged();
 };
 
 /** The TaskPanel is the central panel of this plugin, collecting various sub panels. */
 class TaskPanelPrivate;
-class TaskPanel : public rviz_common::Panel
+class TaskPanel : public rviz::Panel
 {
 	Q_OBJECT
 	Q_DECLARE_PRIVATE(TaskPanel)
@@ -93,12 +91,12 @@ public:
 	 * If not yet done, an instance is created. If use count drops to zero,
 	 * the global instance is destroyed.
 	 */
-	static void request(rviz_common::WindowManagerInterface* window_manager);
+	static void request(rviz::WindowManagerInterface* window_manager);
 	static void release();
 
 	void onInitialize() override;
-	void load(const rviz_common::Config& config) override;
-	void save(rviz_common::Config config) const override;
+	void load(const rviz::Config& config) override;
+	void save(rviz::Config config) const override;
 
 protected Q_SLOTS:
 	void showStageDockWidget();
@@ -120,30 +118,30 @@ class TaskView : public SubPanel
 
 protected:
 	// configuration settings
-	enum TaskExpand
+	enum TaskExpand : uint8_t
 	{
 		EXPAND_TOP = 1,
 		EXPAND_ALL,
 		EXPAND_NONE
 	};
 
-	rviz_common::properties::EnumProperty* initial_task_expand;
-	rviz_common::properties::EnumProperty* old_task_handling;
-	rviz_common::properties::BoolProperty* show_time_column;
+	rviz::EnumProperty* initial_task_expand;
+	rviz::EnumProperty* old_task_handling;
+	rviz::BoolProperty* show_time_column;
 
 public:
-	enum OldTaskHandling
+	enum OldTaskHandling : uint8_t
 	{
 		OLD_TASK_KEEP = 1,
 		OLD_TASK_REPLACE,
 		OLD_TASK_REMOVE
 	};
 
-	TaskView(TaskPanel* parent, rviz_common::properties::Property* root);
+	TaskView(TaskPanel* parent, rviz::Property* root);
 	~TaskView() override;
 
-	void save(rviz_common::Config config) override;
-	void load(const rviz_common::Config& config) override;
+	void save(rviz::Config config) override;
+	void load(const rviz::Config& config) override;
 
 public Q_SLOTS:
 	void addTask();
@@ -172,10 +170,10 @@ class GlobalSettingsWidget : public SubPanel
 	GlobalSettingsWidgetPrivate* d_ptr;
 
 public:
-	GlobalSettingsWidget(TaskPanel* parent, rviz_common::properties::Property* root);
+	GlobalSettingsWidget(TaskPanel* parent, rviz::Property* root);
 	~GlobalSettingsWidget() override;
 
-	void save(rviz_common::Config config) override;
-	void load(const rviz_common::Config& config) override;
+	void save(rviz::Config config) override;
+	void load(const rviz::Config& config) override;
 };
 }  // namespace moveit_rviz_plugin

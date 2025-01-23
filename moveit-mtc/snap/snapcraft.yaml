@@ -1,12 +1,12 @@
 name: ros2-moveit-mtc
-version: '2.2.0'
+version: '2.2.1'
 summary: Snap with MoveIt2, MoveIt task constructor and ros2_control example
 description: |
   It runs a fake Panda robot HW, the corresponding robot controllers and the MTC planning. Visualization happens in desktop computer.
 
 base: core22
 grade: stable
-confinement: strict
+confinement: devmode
 
 parts:
   ros-app:
@@ -33,6 +33,10 @@ parts:
     organize:
       '*' : usr/bin/
 
+  gnu-bash:
+    source: http://ftp.gnu.org/gnu/bash/bash-5.2.tar.gz
+    plugin: autotools
+
 apps:
   initALL:
     command: usr/bin/run-initALL.sh
@@ -54,7 +58,12 @@ apps:
     # passthrough:
       # restart-condition: always
       # restart-delay: 10s   
-    
+  bash:
+    command: usr/local/bin/bash
+    plugs:
+      - ros-base
+      - network
+      - network-bind
 
 plugs:
   ros-base:

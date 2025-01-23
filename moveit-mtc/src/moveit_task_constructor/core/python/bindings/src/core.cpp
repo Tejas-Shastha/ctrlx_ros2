@@ -95,6 +95,8 @@ void export_core(pybind11::module& m) {
 		}
 	});
 
+	py::classh<Introspection>(m, "Introspection", "Introspection class");
+
 	py::classh<SolutionBase>(m, "Solution", "Abstract base class for solutions of a stage")
 	    .def_property("cost", &SolutionBase::cost, &SolutionBase::setCost, "float: Cost associated with the solution")
 	    .def_property("comment", &SolutionBase::comment, &SolutionBase::setComment,
@@ -109,12 +111,12 @@ void export_core(pybind11::module& m) {
 	        ":visualization_msgs:`Marker`: Markers to visualize important aspects of the trajectory (read-only)")
 	    .def(
 	        "toMsg",
-	        [](const SolutionBase& self) {
-		        moveit_task_constructor_msgs::msg::Solution msg;
-		        self.toMsg(msg);
+	        [](const SolutionBase& self, moveit::task_constructor::Introspection* introspection) {
+		        moveit_task_constructor_msgs::Solution msg;
+		        self.toMsg(msg, introspection);
 		        return msg;
 	        },
-	        "Convert to the ROS message ``Solution``");
+	        "Convert to the ROS message ``Solution``", py::arg("introspection") = nullptr);
 
 	py::classh<SubTrajectory, SolutionBase>(m, "SubTrajectory",
 	                                        "Solution trajectory connecting two InterfaceStates of a stage")
@@ -160,7 +162,7 @@ void export_core(pybind11::module& m) {
 	    .def(py::init<std::map<std::string, double>>());
 	py::classh<cost::DistanceToReference, TrajectoryCostTerm>(m, "DistanceToReference",
 	                                                          "Computes joint-based distance to reference pose")
-	    .def(py::init<const moveit_msgs::msg::RobotState&, TrajectoryCostTerm::Mode, std::map<std::string, double>>(),
+	    .def(py::init<const moveit_msgs::RobotState&, TrajectoryCostTerm::Mode, std::map<std::string, double>>(),
 	         "reference"_a, "mode"_a = TrajectoryCostTerm::Mode::AUTO, "weights"_a = std::map<std::string, double>())
 	    .def(py::init<const std::map<std::string, double>&, TrajectoryCostTerm::Mode, std::map<std::string, double>>(),
 	         "reference"_a, "mode"_a = TrajectoryCostTerm::Mode::AUTO, "weights"_a = std::map<std::string, double>());
@@ -412,8 +414,9 @@ void export_core(pybind11::module& m) {
 	    .def_property_readonly("failures", &Task::failures, "Solutions: Failed Solutions of the stage (read-only)")
 	    .def_property("name", &Task::name, &Task::setName, "str: name of the task displayed e.g. in rviz")
 
-	    .def("loadRobotModel", &Task::loadRobotModel, "node"_a, "robot_description"_a = "robot_description",
+	    .def("loadRobotModel", &Task::loadRobotModel, "robot_description"_a = "robot_description",
 	         "Load robot model from given ROS parameter")
+	    .def("setRobotModel", &Task::setRobotModel, "robot_model"_a, "Set the robot model for the task")
 	    .def("getRobotModel", &Task::getRobotModel)
 	    .def("enableIntrospection", &Task::enableIntrospection, "enabled"_a = true,
 	         "Enable publishing intermediate results for inspection in ``rviz``")
@@ -461,6 +464,8 @@ void export_core(pybind11::module& m) {
 	    .def(
 	        "setCostTerm", [](Task& self, const LambdaCostTerm::SubTrajectoryShortSignature& f) { self.setCostTerm(f); },
 	        "Specify a function to calculate trajectory costs")
+	    .def("introspection", &Task::introspection, py::return_value_policy::reference_internal,
+	         "Access introspection object")
 	    .def("reset", &Task::reset, "Reset task (and all its stages)")
 	    .def("init", py::overload_cast<>(&Task::init), "Initialize the task (and all its stages)")
 	    .def("plan", &Task::plan, "max_solutions"_a = 0, R"(
@@ -471,7 +476,30 @@ void export_core(pybind11::module& m) {
 	        "publish",
 	        [](Task& self, const SolutionBasePtr& solution) { self.introspection().publishSolution(*solution); },
 	        "solution"_a, "Publish the given solution to the ROS topic ``solution``")
-	    .def("execute", &Task::execute, "solution"_a, "Send given solution to ``move_group`` node for execution");
+	    .def_static(
+	        "execute",
+	        [](const SolutionBasePtr& solution) {
+		        using namespace moveit::planning_interface;
+		        PlanningSceneInterface psi;
+		        MoveGroupInterface mgi(solution->start()->scene()->getRobotModel()->getJointModelGroupNames()[0]);
+
+		        MoveGroupInterface::Plan plan;
+		        moveit_task_constructor_msgs::Solution serialized;
+		        solution->toMsg(serialized);
+
+		        for (const moveit_task_constructor_msgs::SubTrajectory& traj : serialized.sub_trajectory) {
+			        if (!traj.trajectory.joint_trajectory.points.empty()) {
+				        plan.trajectory_ = traj.trajectory;
+				        if (!mgi.execute(plan)) {
+					        ROS_ERROR("Execution failed! Aborting!");
+					        return;
+				        }
+			        }
+			        psi.applyPlanningScene(traj.scene_diff);
+		        }
+		        ROS_INFO("Executed successfully");
+	        },
+	        "solution"_a, "Send given solution to ``move_group`` node for execution");
 }
 }  // namespace python
 }  // namespace moveit

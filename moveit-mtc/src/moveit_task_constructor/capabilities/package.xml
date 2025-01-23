@@ -10,19 +10,18 @@
 
 	<license>BSD</license>
 
-	<buildtool_depend>ament_cmake</buildtool_depend>
+	<buildtool_depend>catkin</buildtool_depend>
 
 	<depend>fmt</depend>
 	<depend>moveit_core</depend>
 	<depend>moveit_ros_move_group</depend>
-	<depend>moveit_ros_planning</depend>
+	<depend>actionlib</depend>
+	<depend>pluginlib</depend>
+	<depend>std_msgs</depend>
 	<depend>moveit_task_constructor_core</depend>
 	<depend>moveit_task_constructor_msgs</depend>
-	<depend>pluginlib</depend>
-	<depend>rclcpp_action</depend>
-	<depend>std_msgs</depend>
 
 	<export>
-		<build_type>ament_cmake</build_type>
+		<moveit_ros_move_group plugin="${prefix}/capabilities_plugin_description.xml"/>
 	</export>
 </package>

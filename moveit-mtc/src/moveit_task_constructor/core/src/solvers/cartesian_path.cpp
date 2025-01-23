@@ -42,11 +42,7 @@
 #include <moveit/trajectory_processing/time_parameterization.h>
 #include <moveit/kinematics_base/kinematics_base.h>
 #include <moveit/robot_state/cartesian_interpolator.h>
-#if __has_include(<tf2_eigen/tf2_eigen.hpp>)
-#include <tf2_eigen/tf2_eigen.hpp>
-#else
 #include <tf2_eigen/tf2_eigen.h>
-#endif
 
 using namespace trajectory_processing;
 
@@ -54,24 +50,21 @@ namespace moveit {
 namespace task_constructor {
 namespace solvers {
 
-static const rclcpp::Logger LOGGER = rclcpp::get_logger("CartesianPath");
-
 CartesianPath::CartesianPath() {
 	auto& p = properties();
-	p.declare<geometry_msgs::msg::PoseStamped>("ik_frame", "frame to move linearly (use for joint-space target)");
+	p.declare<geometry_msgs::PoseStamped>("ik_frame", "frame to move linearly (use for joint-space target)");
 	p.declare<double>("step_size", 0.01, "step size between consecutive waypoints");
-	p.declare<double>("jump_threshold", 1.5, "acceptable fraction of mean joint motion per step");
+	p.declare<moveit::core::CartesianPrecision>("precision", moveit::core::CartesianPrecision(),
+	                                            "precision of linear path");
 	p.declare<double>("min_fraction", 1.0, "fraction of motion required for success");
 	p.declare<kinematics::KinematicsQueryOptions>("kinematics_options", kinematics::KinematicsQueryOptions(),
 	                                              "KinematicsQueryOptions to pass to CartesianInterpolator");
-	p.declare<kinematics::KinematicsBase::IKCostFn>("kinematics_cost_fn", kinematics::KinematicsBase::IKCostFn(),
-	                                                "Cost function to pass to IK solver");
 }
 
 void CartesianPath::init(const core::RobotModelConstPtr& /*robot_model*/) {}
 
 void CartesianPath::setIKFrame(const Eigen::Isometry3d& pose, const std::string& link) {
-	geometry_msgs::msg::PoseStamped pose_msg;
+	geometry_msgs::PoseStamped pose_msg;
 	pose_msg.header.frame_id = link;
 	pose_msg.pose = tf2::toMsg(pose);
 	setIKFrame(pose_msg);
@@ -81,14 +74,14 @@ PlannerInterface::Result CartesianPath::plan(const planning_scene::PlanningScene
                                              const planning_scene::PlanningSceneConstPtr& to,
                                              const moveit::core::JointModelGroup* jmg, double timeout,
                                              robot_trajectory::RobotTrajectoryPtr& result,
-                                             const moveit_msgs::msg::Constraints& path_constraints) {
+                                             const moveit_msgs::Constraints& path_constraints) {
 	const auto& props = properties();
 	const moveit::core::LinkModel* link;
 	std::string error_msg;
 	Eigen::Isometry3d ik_pose_world;
 
 	if (!utils::getRobotTipForFrame(props.property("ik_frame"), *from, jmg, error_msg, link, ik_pose_world))
-		return { false, error_msg };
+		return { false, "CartesianPath: " + error_msg };
 
 	Eigen::Isometry3d offset = from->getCurrentState().getGlobalLinkTransform(link).inverse() * ik_pose_world;
 
@@ -101,7 +94,7 @@ PlannerInterface::Result CartesianPath::plan(const planning_scene::PlanningScene
                                              const moveit::core::LinkModel& link, const Eigen::Isometry3d& offset,
                                              const Eigen::Isometry3d& target, const moveit::core::JointModelGroup* jmg,
                                              double /*timeout*/, robot_trajectory::RobotTrajectoryPtr& result,
-                                             const moveit_msgs::msg::Constraints& path_constraints) {
+                                             const moveit_msgs::Constraints& path_constraints) {
 	const auto& props = properties();
 	planning_scene::PlanningScenePtr sandbox_scene = from->diff();
 
@@ -120,9 +113,8 @@ PlannerInterface::Result CartesianPath::plan(const planning_scene::PlanningScene
 	double achieved_fraction = moveit::core::CartesianInterpolator::computeCartesianPath(
 	    &(sandbox_scene->getCurrentStateNonConst()), jmg, trajectory, &link, target, true,
 	    moveit::core::MaxEEFStep(props.get<double>("step_size")),
-	    moveit::core::JumpThreshold(props.get<double>("jump_threshold")), is_valid,
-	    props.get<kinematics::KinematicsQueryOptions>("kinematics_options"),
-	    props.get<kinematics::KinematicsBase::IKCostFn>("kinematics_cost_fn"), offset);
+	    props.get<moveit::core::CartesianPrecision>("precision"), is_valid,
+	    props.get<kinematics::KinematicsQueryOptions>("kinematics_options"), offset);
 
 	assert(!trajectory.empty());  // there should be at least the start state
 	result = std::make_shared<robot_trajectory::RobotTrajectory>(sandbox_scene->getRobotModel(), jmg);
@@ -135,7 +127,7 @@ PlannerInterface::Result CartesianPath::plan(const planning_scene::PlanningScene
 		                          props.get<double>("max_acceleration_scaling_factor"));
 
 	if (achieved_fraction < props.get<double>("min_fraction")) {
-		return { false, "min_fraction not met. Achieved: " + std::to_string(achieved_fraction) };
+		return { false, "CartesianPath: min_fraction not met. Achieved: " + std::to_string(achieved_fraction) };
 	}
 	return { true, "achieved fraction: " + std::to_string(achieved_fraction) };
 }

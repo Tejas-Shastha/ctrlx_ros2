@@ -13,14 +13,14 @@
 #include <moveit/task_constructor/stages/modify_planning_scene.h>
 #include <moveit/task_constructor/stages/fix_collision_objects.h>
 
-#include <rclcpp/rclcpp.hpp>
+#include <ros/ros.h>
 #include <moveit/planning_scene/planning_scene.h>
 #include <gtest/gtest.h>
 
 using namespace moveit::task_constructor;
 
 void spawnObject(const planning_scene::PlanningScenePtr& scene) {
-	moveit_msgs::msg::CollisionObject o;
+	moveit_msgs::CollisionObject o;
 	o.id = "object";
 	o.header.frame_id = "world";
 	o.primitive_poses.resize(1);
@@ -29,7 +29,7 @@ void spawnObject(const planning_scene::PlanningScenePtr& scene) {
 	o.primitive_poses[0].position.z = 0.10;
 	o.primitive_poses[0].orientation.w = 1.0;
 	o.primitives.resize(1);
-	o.primitives[0].type = shape_msgs::msg::SolidPrimitive::CYLINDER;
+	o.primitives[0].type = shape_msgs::SolidPrimitive::CYLINDER;
 	o.primitives[0].dimensions.resize(2);
 	o.primitives[0].dimensions[0] = 0.23;
 	o.primitives[0].dimensions[1] = 0.03;
@@ -39,15 +39,13 @@ void spawnObject(const planning_scene::PlanningScenePtr& scene) {
 TEST(PA10, pick) {
 	Task t;
 	t.stages()->setName("pick");
-
-	auto node = rclcpp::Node::make_shared("pa10");
-	t.loadRobotModel(node);
+	t.loadRobotModel();
 	// define global properties used by most stages
 	t.setProperty("group", std::string("left_arm"));
 	t.setProperty("eef", std::string("la_tool_mount"));
 	t.setProperty("gripper", std::string("left_hand"));
 
-	auto pipeline = std::make_shared<solvers::PipelinePlanner>(node);
+	auto pipeline = std::make_shared<solvers::PipelinePlanner>();
 	pipeline->setPlannerId("RRTConnectkConfigDefault");
 	auto cartesian = std::make_shared<solvers::CartesianPath>();
 
@@ -89,7 +87,7 @@ TEST(PA10, pick) {
 		move->setIKFrame("lh_tool_frame");
 		move->setMinMaxDistance(0.05, 0.1);
 
-		geometry_msgs::msg::Vector3Stamped direction;
+		geometry_msgs::Vector3Stamped direction;
 		direction.header.frame_id = "lh_tool_frame";
 		direction.vector.z = 1;
 		move->setDirection(direction);
@@ -156,7 +154,7 @@ TEST(PA10, pick) {
 		move->properties().set("marker_ns", std::string("lift"));
 		move->setIKFrame("lh_tool_frame");
 
-		geometry_msgs::msg::Vector3Stamped direction;
+		geometry_msgs::Vector3Stamped direction;
 		direction.header.frame_id = "world";
 		direction.vector.z = 1;
 		move->setDirection(direction);
@@ -170,7 +168,7 @@ TEST(PA10, pick) {
 		move->properties().set("marker_ns", std::string("lift"));
 		move->setIKFrame("lh_tool_frame");
 
-		geometry_msgs::msg::TwistStamped twist;
+		geometry_msgs::TwistStamped twist;
 		twist.header.frame_id = "object";
 		twist.twist.linear.y = 1;
 		twist.twist.angular.y = 2;
@@ -181,7 +179,7 @@ TEST(PA10, pick) {
 	try {
 		t.plan();
 	} catch (const InitStageException& e) {
-		ADD_FAILURE() << "planning failed with exception" << std::endl << e << t;
+		ADD_FAILURE() << "planning failed with exception\n" << e << t;
 	}
 
 	auto solutions = t.solutions().size();
@@ -191,7 +189,9 @@ TEST(PA10, pick) {
 
 int main(int argc, char** argv) {
 	testing::InitGoogleTest(&argc, argv);
-	rclcpp::init(argc, argv);
+	ros::init(argc, argv, "pa10");
+	ros::AsyncSpinner spinner(1);
+	spinner.start();
 
 	return RUN_ALL_TESTS();
 }

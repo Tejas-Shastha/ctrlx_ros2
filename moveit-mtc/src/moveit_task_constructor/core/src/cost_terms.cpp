@@ -141,8 +141,7 @@ double PathLength::operator()(const SubTrajectory& s, std::string& /*comment*/) 
 	return path_length;
 }
 
-DistanceToReference::DistanceToReference(const moveit_msgs::msg::RobotState& ref, Mode m,
-                                         std::map<std::string, double> w)
+DistanceToReference::DistanceToReference(const moveit_msgs::RobotState& ref, Mode m, std::map<std::string, double> w)
   : reference(ref), weights(std::move(w)), mode(m) {}
 
 DistanceToReference::DistanceToReference(const std::map<std::string, double>& ref, Mode m,

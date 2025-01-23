@@ -59,7 +59,7 @@ class PropertyConverterRegistry
 		PropertyConverterBase::from_python_converter_function from_;
 	};
 	// map from type_index to corresponding converter functions
-	typedef std::map<std::type_index, Entry> RegistryMap;
+	using RegistryMap = std::map<std::type_index, Entry>;
 	RegistryMap types_;
 	// map from ros-msg-names to entry in types_
 	using RosMsgTypeNameMap = std::map<std::string, RegistryMap::iterator>;
@@ -119,15 +119,12 @@ py::object PropertyConverterRegistry::toPython(const boost::any& value) {
 
 std::string rosMsgName(PyObject* object) {
 	py::object o = py::reinterpret_borrow<py::object>(object);
-	auto cls = o.attr("__class__");
-	auto name = cls.attr("__name__").cast<std::string>();
-	auto module = cls.attr("__module__").cast<std::string>();
-	auto pos = module.find(".msg");
-	if (pos == std::string::npos)
+	try {
+		return o.attr("_type").cast<std::string>();
+	} catch (const py::error_already_set& e) {
 		// object is not a ROS message type, return it's class name instead
-		return module + "." + name;
-	else
-		return module.substr(0, pos) + "/msg/" + name;
+		return o.attr("__class__").attr("__name__").cast<std::string>();
+	}
 }
 
 boost::any PropertyConverterRegistry::fromPython(const py::object& po) {

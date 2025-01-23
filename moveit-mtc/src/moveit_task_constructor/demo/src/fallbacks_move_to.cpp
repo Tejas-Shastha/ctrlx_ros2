@@ -1,4 +1,4 @@
-#include <rclcpp/rclcpp.hpp>
+#include <ros/ros.h>
 
 #include <moveit/robot_model/robot_model.h>
 #include <moveit/planning_scene/planning_scene.h>
@@ -20,33 +20,27 @@ using namespace moveit::task_constructor;
  * (where all plans should start from the same initial state for execution).
  */
 int main(int argc, char** argv) {
-	rclcpp::init(argc, argv);
-	auto node = rclcpp::Node::make_shared("mtc_tutorial");
-	std::thread spinning_thread([node] { rclcpp::spin(node); });
+	ros::init(argc, argv, "mtc_tutorial");
+
+	ros::AsyncSpinner spinner{ 1 };
+	spinner.start();
 
 	// setup Task
 	Task t;
 	t.setName("fallback strategies in MoveTo");
-	t.loadRobotModel(node);
+	t.loadRobotModel();
 	const moveit::core::RobotModelConstPtr robot{ t.getRobotModel() };
 
 	assert(robot->getName() == "panda");
 
 	// setup solvers
 	auto cartesian = std::make_shared<solvers::CartesianPath>();
-	cartesian->setJumpThreshold(2.0);
 
-	const auto ptp = [&node]() {
-		auto pp{ std::make_shared<solvers::PipelinePlanner>(node, "pilz_industrial_motion_planner") };
-		pp->setPlannerId("PTP");
-		return pp;
-	}();
+	auto ptp = std::make_shared<solvers::PipelinePlanner>("pilz_industrial_motion_planner");
+	ptp->setPlannerId("PTP");
 
-	const auto rrtconnect = [&node]() {
-		auto pp{ std::make_shared<solvers::PipelinePlanner>(node, "ompl") };
-		pp->setPlannerId("RRTConnect");
-		return pp;
-	}();
+	auto rrtconnect = std::make_shared<solvers::PipelinePlanner>("ompl");
+	rrtconnect->setPlannerId("RRTConnect");
 
 	// target end state for all Task plans
 	std::map<std::string, double> target_state;
@@ -84,12 +78,13 @@ int main(int argc, char** argv) {
 		auto scene{ initial_scene->diff() };
 		scene->getCurrentStateNonConst().setVariablePositions({ { "panda_joint1", -TAU / 8 } });
 		scene->processCollisionObjectMsg([]() {
-			moveit_msgs::msg::CollisionObject co;
+			moveit_msgs::CollisionObject co;
 			co.id = "box";
 			co.header.frame_id = "panda_link0";
 			co.operation = co.ADD;
-			co.pose = []() {
-				geometry_msgs::msg::Pose p;
+			auto& pose{ co.pose };
+			pose = []() {
+				geometry_msgs::Pose p;
 				p.position.x = 0.3;
 				p.position.y = 0.0;
 				p.position.z = 0.64 / 2;
@@ -97,7 +92,7 @@ int main(int argc, char** argv) {
 				return p;
 			}();
 			co.primitives.push_back([]() {
-				shape_msgs::msg::SolidPrimitive sp;
+				shape_msgs::SolidPrimitive sp;
 				sp.type = sp.BOX;
 				sp.dimensions = { 0.2, 0.05, 0.64 };
 				return sp;
@@ -128,11 +123,10 @@ int main(int argc, char** argv) {
 	try {
 		t.plan();
 	} catch (const InitStageException& e) {
-		std::cout << e << std::endl;
+		std::cout << e << '\n';
 	}
 
-	// keep alive for interactive inspection in rviz
-	spinning_thread.join();
+	ros::waitForShutdown();
 
 	return 0;
 }

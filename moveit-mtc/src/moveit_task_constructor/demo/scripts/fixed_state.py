@@ -3,12 +3,12 @@
 
 from moveit.core import planning_scene
 from moveit.task_constructor import core, stages
-import rclcpp
+from py_binding_tools import roscpp_init
 from moveit.core.planning_scene import PlanningScene
 import time
 
-rclcpp.init()
-node = rclcpp.Node("mtc_tutorial")
+roscpp_init("mtc_tutorial")
+
 
 # Create a task
 task = core.Task()
@@ -16,7 +16,7 @@ task.name = "fixed state"
 
 # [initAndConfigFixedState]
 # Initialize a PlanningScene for use in a FixedState stage
-task.loadRobotModel(node)  # load the robot model (usually done in init())
+task.loadRobotModel()  # load the robot model (usually done in init())
 planningScene = PlanningScene(task.getRobotModel())
 
 # Create a FixedState stage and pass the created PlanningScene as its state

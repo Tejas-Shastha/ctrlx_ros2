@@ -14,4 +14,4 @@ fi
 # rm -rf log/
 
 source /opt/ros/humble/setup.bash
-colcon build --mixin release
+colcon build --cmake-args -DCMAKE_BUILD_TYPE=Release --parallel-workers 1

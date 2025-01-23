@@ -1,4 +1,4 @@
-add_library(${PROJECT_NAME}_stages SHARED
+add_library(${PROJECT_NAME}_stages
 	${PROJECT_INCLUDE}/stages/modify_planning_scene.h
 	${PROJECT_INCLUDE}/stages/fix_collision_objects.h
 
@@ -42,24 +42,13 @@ add_library(${PROJECT_NAME}_stages SHARED
 	simple_grasp.cpp
 	pick.cpp
 )
-target_link_libraries(${PROJECT_NAME}_stages ${PROJECT_NAME})
-ament_target_dependencies(${PROJECT_NAME}_stages
-	moveit_core
-	geometry_msgs
-	moveit_ros_planning
-	moveit_ros_planning_interface
-	moveit_task_constructor_msgs
-	rclcpp
-	tf2_eigen
-	visualization_msgs
-)
+target_link_libraries(${PROJECT_NAME}_stages PUBLIC ${PROJECT_NAME} ${catkin_LIBRARIES})
 
-add_library(${PROJECT_NAME}_stage_plugins SHARED
-	plugins.cpp
+add_library(${PROJECT_NAME}_stage_plugins
+   plugins.cpp
 )
-target_link_libraries(${PROJECT_NAME}_stage_plugins ${PROJECT_NAME}_stages)
+target_link_libraries(${PROJECT_NAME}_stage_plugins ${PROJECT_NAME}_stages ${catkin_LIBRARIES})
 
 install(TARGETS ${PROJECT_NAME}_stages ${PROJECT_NAME}_stage_plugins
-        EXPORT ${PROJECT_NAME}Targets
-        ARCHIVE DESTINATION lib
-        LIBRARY DESTINATION lib)
+	ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+	LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION})

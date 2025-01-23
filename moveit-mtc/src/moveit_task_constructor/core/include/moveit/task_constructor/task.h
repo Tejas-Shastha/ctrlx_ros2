@@ -42,14 +42,12 @@
 #include "container.h"
 
 #include <moveit/task_constructor/introspection.h>
-#include <moveit_task_constructor_msgs/msg/solution.hpp>
+#include <moveit_task_constructor_msgs/Solution.h>
 
 #include <moveit/macros/class_forward.h>
 
-#include <moveit_msgs/msg/move_it_error_codes.hpp>
+#include <moveit_msgs/MoveItErrorCodes.h>
 #include <moveit/utils/moveit_error_code.h>
-
-#include <rclcpp/node.hpp>
 
 namespace moveit {
 namespace core {
@@ -94,7 +92,7 @@ public:
 	/// setting the robot model also resets the task
 	void setRobotModel(const moveit::core::RobotModelConstPtr& robot_model);
 	/// load robot model from given parameter
-	void loadRobotModel(const rclcpp::Node::SharedPtr& node, const std::string& robot_description = "robot_description");
+	void loadRobotModel(const std::string& robot_description = "robot_description");
 
 	void add(Stage::pointer&& stage);
 	void insert(Stage::pointer&& stage, int before = -1) override;

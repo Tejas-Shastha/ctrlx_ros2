@@ -18,4 +18,4 @@ export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$ROS_BASE/usr/lib/$TRIPLET
 source $ROS_BASE/opt/ros/humble/setup.bash #source if ros2 using debian package is build as a snap
 source $SNAP/local_setup.bash 
 export AMENT_PREFIX_PATH=$AMENT_PREFIX_PATH:$SNAP/opt/ros/humble
-
+echo "ROS2 Humble+mtc sourced!!"

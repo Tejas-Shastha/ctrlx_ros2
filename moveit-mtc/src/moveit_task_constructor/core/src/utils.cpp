@@ -35,11 +35,7 @@
 
 /* Authors: Michael Goerner, Robert Haschke */
 
-#if __has_include(<tf2_eigen/tf2_eigen.hpp>)
-#include <tf2_eigen/tf2_eigen.hpp>
-#else
 #include <tf2_eigen/tf2_eigen.h>
-#endif
 
 #include <moveit/robot_state/robot_state.h>
 #include <moveit/planning_scene/planning_scene.h>
@@ -74,7 +70,7 @@ bool getRobotTipForFrame(const Property& property, const planning_scene::Plannin
 		}
 		tip_in_global_frame = scene.getCurrentState().getGlobalLinkTransform(robot_link);
 	} else {
-		auto ik_pose_msg = boost::any_cast<geometry_msgs::msg::PoseStamped>(property.value());
+		auto ik_pose_msg = boost::any_cast<geometry_msgs::PoseStamped>(property.value());
 		tf2::fromMsg(ik_pose_msg.pose, tip_in_global_frame);
 
 		robot_link = nullptr;
